@@ -31,14 +31,13 @@ def get_vertical_lines(image , side):
         minLineLength = 1
         maxLineGap = 1250
         lines = cv2.HoughLines(edges,1,np.pi/180, 200)
-        if lines.any():
-            if len(lines) > 2:  
-                linesFound = True  
-            else: 
-                BlueRedMask -= 10
+        if lines is not None and len(lines) > 2:
+            linesFound = True
+        else:
+            BlueRedMask -= 10
+            if BlueRedMask < 0:
+                raise ValueError("Não foi possível detectar linhas no campo. Verifique a imagem.")
 
-    
-    
     linesFound = False
     
     if side == 'left':
@@ -118,11 +117,12 @@ def get_horizontal_lines(image):
         minLineLength = 1
         maxLineGap = 1250
         lines = cv2.HoughLines(edges,1,np.pi/180, 200)
-        if lines.any():
-            if len(lines) > 2:  
-                linesFound = True  
-            else: 
-                BlueRedMask -= 10
+        if lines is not None and len(lines) > 2:
+            linesFound = True
+        else:
+            BlueRedMask -= 10
+            if BlueRedMask < 0:
+                raise ValueError("Não foi possível detectar linhas horizontais. Verifique a imagem.")
 
     linesFound = False
     angleMaxLimit = 120
@@ -167,59 +167,6 @@ def get_horizontal_lines(image):
             
     return selectedLines
 
-# def get_horizontal_lines(image):
-    img = image
-    selectedLines = []
-    selectedLinesParams = []
-    linesFound = False
-    BlueRedMask = 100
-    
-    while linesFound == False:
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv, (36, BlueRedMask, BlueRedMask), (70, 255,255))
-        imask = mask>0
-        green = np.zeros_like(img, np.uint8)
-        green[imask] = img[imask]
-        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(green,150,250,apertureSize = 3) 
-        minLineLength = 1
-        maxLineGap = 1250
-        lines = cv2.HoughLines(edges,1,np.pi/180, 200)
-        if lines.any():
-            if len(lines) > 2:  
-                linesFound = True  
-            else: 
-                BlueRedMask -= 10
-
-    linesFound = False
-    angleCosLimit = 0.1
-    while linesFound == False:
-        for line in lines: 
-            for r,theta in line:
-                isLineValid = True
-                a = np.cos(theta) 
-                b = np.sin(theta)
-                if abs(a) < angleCosLimit:
-                    x0 = a*r 
-                    y0 = b*r 
-                    x1 = int(x0 + 1000*(-b)) 
-                    y1 = int(y0 + 1000*(a)) 
-                    x2 = int(x0 - 1000*(-b)) 
-                    y2 = int(y0 - 1000*(a))
-                    if len(selectedLines) > 0: 
-                        for lineParams in selectedLinesParams:
-                            if abs(lineParams[0] - r) < 200:
-                                isLineValid = False
-                    if isLineValid:
-                        selectedLines.append([[x1,y1],[x2,y2]])
-                        selectedLinesParams.append([r, theta])
-                        # cv2.line(img,(x1,y1), (x2,y2), (0,0,255),1)
-        if len(selectedLines) < 2:
-            angleCosLimit += 0.05
-        else:
-            linesFound = True
-            
-    return selectedLines
 
 def sample_lines(lines, size):
     if size > len(lines):
